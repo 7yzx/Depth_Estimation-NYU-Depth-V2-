@@ -13,6 +13,8 @@ Dependencies
 + python 2.7<br>
 + Pytorch 0.3.1<br>
 
+ [环境安装参考](https://blog.csdn.net/dorisx/article/details/118607911)，现在已经没有这个源了。
+
 Running
 -
 
