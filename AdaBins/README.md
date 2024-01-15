@@ -2,6 +2,8 @@
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/adabins-depth-estimation-using-adaptive-bins/monocular-depth-estimation-on-kitti-eigen)](https://paperswithcode.com/sota/monocular-depth-estimation-on-kitti-eigen?p=adabins-depth-estimation-using-adaptive-bins) [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/adabins-depth-estimation-using-adaptive-bins/monocular-depth-estimation-on-nyu-depth-v2)](https://paperswithcode.com/sota/monocular-depth-estimation-on-nyu-depth-v2?p=adabins-depth-estimation-using-adaptive-bins)
 
 Official implementation of [Adabins: Depth Estimation using adaptive bins](https://arxiv.org/abs/2011.14141)
+
+[github repo](https://github.com/shariqfarooq123/AdaBins)
 ## Download links
 * You can download the pretrained models "AdaBins_nyu.pt" and "AdaBins_kitti.pt" from [here](https://drive.google.com/drive/folders/1nYyaQXOBjNdUJDsmJpcRpu6oE55aQoLA?usp=sharing)
 * You can download the predicted depths in 16-bit format for NYU-Depth-v2 official test set and KITTI Eigen split test set [here](https://drive.google.com/drive/folders/1b3nfm8lqrvUjtYGmsqA5gptNQ8vPlzzS?usp=sharing)
@@ -13,6 +15,40 @@ Official implementation of [Adabins: Depth Estimation using adaptive bins](https
   <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a>
 </p>
+
+## dataset
+```Python
+    #dataset path training
+    parser.add_argument("--data_path", default='./dataset/nyu/sync/', type=str,
+                        help="path to dataset")
+    parser.add_argument("--gt_path", default='./dataset/nyu/sync/', type=str,
+                        help="path to dataset")
+    #dataset test
+    parser.add_argument('--filenames_file',
+                        default="./train_test_inputs/nyudepthv2_train_files_with_gt.txt",
+                        type=str, help='path to the filenames text file')   
+    #dataset path eval
+    parser.add_argument('--data_path_eval',
+                        default="./dataset/nyu/official_splits/test/",
+                        type=str, help='path to the data for online evaluation')
+    parser.add_argument('--gt_path_eval', default="./dataset/nyu/official_splits/test/",
+                        type=str, help='path to the groundtruth data for online evaluation')
+    parser.add_argument('--filenames_file_eval',
+                        default="./train_test_inputs/nyudepthv2_test_files_with_gt.txt",
+                        type=str, help='path to the filenames text file for online evaluation')
+```
+
+## how to train
+关于训练，主要就是修改一下数据集的位置。
+其次是加载模型，由于模型是从github上加载，然而不管是否使用代理都会出现加载问题，所以将其使用的仓库下载下来然后本地加载即可
+```python
+    #url
+    # basemodel = torch.hub.load('rwightman/gen-efficientnet-pytorch', basemodel_name, pretrained=True)
+    #找到仓库地址，下载在 repo_or_dir ="/home/xxx/.cache/torch/hub/rwightman_gen-efficientnet-pytorch_master"
+    #加载
+    basemodel = torch.hub.load(repo_or_dir, basemodel_name, source='local',pretrained=True)
+```
+使用GPU训练，对显存要求很高，这里的6G满足不了
 
 ## Inference
 Move the downloaded weights to a directory of your choice (we will use "./pretrained/" here). You can then use the pretrained models like so:
