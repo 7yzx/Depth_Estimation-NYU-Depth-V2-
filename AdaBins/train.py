@@ -20,7 +20,8 @@ import utils
 from dataloader import DepthDataLoader
 from loss import SILogLoss, BinsChamferLoss
 from utils import RunningAverage, colorize
-
+# from torchviz import make_dot
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 # os.environ['WANDB_MODE'] = 'dryrun'
 PROJECT = "MDE-AdaBins"
 logging = True
@@ -72,12 +73,17 @@ def main_worker(gpu, ngpus_per_node, args):
 
     model = models.UnetAdaptiveBins.build(n_bins=args.n_bins, min_val=args.min_depth, max_val=args.max_depth,
                                           norm=args.norm)
+    #测试网络结构，得到了png，但是这个网络太复杂了。。。
+    # x = torch.rand(2, 3, 480, 640)
+    # bins, pred = model(x)
+    # make_dot(pred, params=dict(list(model.named_parameters()))).render("model_graph", format="png")
 
     ################################################################################################
 
     if args.gpu is not None:  # If a gpu is set by user: NO PARALLELISM!!
         torch.cuda.set_device(args.gpu)
         model = model.cuda(args.gpu)
+
 
     args.multigpu = False
     if args.distributed:
@@ -314,7 +320,7 @@ if __name__ == '__main__':
                         choices=['linear', 'softmax', 'sigmoid'])
     parser.add_argument("--same-lr", '--same_lr', default=False, action="store_true",
                         help="Use same LR for all param groups")
-    parser.add_argument("--distributed", default=True, action="store_true", help="Use DDP if set")
+    parser.add_argument("--distributed", default=False, action="store_true", help="Use DDP if set")
     parser.add_argument("--root", default=".", type=str,
                         help="Root folder to save data in")
     parser.add_argument("--resume", default='', type=str, help="Resume from checkpoint")
@@ -322,12 +328,12 @@ if __name__ == '__main__':
     parser.add_argument("--notes", default='', type=str, help="Wandb notes")
     parser.add_argument("--tags", default='sweep', type=str, help="Wandb tags")
 
-    parser.add_argument("--workers", default=11, type=int, help="Number of workers for data loading")
+    parser.add_argument("--workers", default=1 ,type=int, help="Number of workers for data loading")
     parser.add_argument("--dataset", default='nyu', type=str, help="Dataset to train on")
 
-    parser.add_argument("--data_path", default='../dataset/nyu/sync/', type=str,
+    parser.add_argument("--data_path", default='./dataset/nyu/sync/', type=str,
                         help="path to dataset")
-    parser.add_argument("--gt_path", default='../dataset/nyu/sync/', type=str,
+    parser.add_argument("--gt_path", default='./dataset/nyu/sync/', type=str,
                         help="path to dataset")
 
     parser.add_argument('--filenames_file',
@@ -348,9 +354,9 @@ if __name__ == '__main__':
                         action='store_true')
 
     parser.add_argument('--data_path_eval',
-                        default="../dataset/nyu/official_splits/test/",
+                        default="./dataset/nyu/official_splits/test/",
                         type=str, help='path to the data for online evaluation')
-    parser.add_argument('--gt_path_eval', default="../dataset/nyu/official_splits/test/",
+    parser.add_argument('--gt_path_eval', default="./dataset/nyu/official_splits/test/",
                         type=str, help='path to the groundtruth data for online evaluation')
     parser.add_argument('--filenames_file_eval',
                         default="./train_test_inputs/nyudepthv2_test_files_with_gt.txt",
@@ -387,7 +393,7 @@ if __name__ == '__main__':
         args.world_size = 1
         args.rank = 0
         nodes = ["127.0.0.1"]
-
+    #是否使用分布式计算，这里我没有，所以false
     if args.distributed:
         mp.set_start_method('forkserver')
 

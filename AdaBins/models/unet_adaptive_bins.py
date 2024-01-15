@@ -4,8 +4,18 @@ import torch.nn.functional as F
 
 from .miniViT import mViT
 
-
 class UpSampleBN(nn.Module):
+    '''
+    通常用于在神经网络中实现特定的上采样操作
+    始化方法 (__init__ 方法):
+    skip_input: 输入特征的通道数，用于连接上采样输出和之前的特征。
+    output_features: 上采样块的输出通道数。
+    层:
+
+    _net: 一个由卷积、批量归一化和 LeakyReLU 组成的序列。包括两个卷积层，
+    每个卷积层后面跟随批量归一化和 LeakyReLU 激活函数。
+
+    '''
     def __init__(self, skip_input, output_features):
         super(UpSampleBN, self).__init__()
 
@@ -17,6 +27,15 @@ class UpSampleBN(nn.Module):
                                   nn.LeakyReLU())
 
     def forward(self, x, concat_with):
+        '''
+        接收两个输入张量 x 和 concat_with。
+        对输入 x 进行上采样，以与 concat_with 相同的大小，使用双线性插值（bilinear interpolation）。
+        将上采样的张量和 concat_with 进行通道维度上的拼接。
+        将拼接后的张量传递给上采样块的 _net 序列。
+        返回上采样块的输出。
+        这个模块的作用是执行上采样操作，将输入 x 上采样到与 concat_with 相同的大小，然后将上采样的结果与 concat_with 进行通道拼接，
+        最终通过一系列卷积、批量归一化和激活函数处理。
+        '''
         up_x = F.interpolate(x, size=[concat_with.size(2), concat_with.size(3)], mode='bilinear', align_corners=True)
         f = torch.cat([up_x, concat_with], dim=1)
         return self._net(f)
@@ -123,12 +142,21 @@ class UnetAdaptiveBins(nn.Module):
         basemodel_name = 'tf_efficientnet_b5_ap'
 
         print('Loading base model ()...'.format(basemodel_name), end='')
-        basemodel = torch.hub.load('rwightman/gen-efficientnet-pytorch', basemodel_name, pretrained=True)
+        #local
+        repo_or_dir ="/home/whuai/.cache/torch/hub/rwightman_gen-efficientnet-pytorch_master"
+        basemodel = torch.hub.load(repo_or_dir, basemodel_name, source='local',pretrained=True)
+
+        #url
+        # basemodel = torch.hub.load('rwightman/gen-efficientnet-pytorch', basemodel_name, pretrained=True)
         print('Done.')
 
         # Remove last layer
         print('Removing last two layers (global_pool & classifier).')
+        #这一行代码将模型的global_pool属性替换为一个nn.Identity()实例。
+        # 将global_pool替换为nn.Identity()相当于将全局池化层去掉，即不再执行池化操作，保留原始的特征图。
         basemodel.global_pool = nn.Identity()
+        #同样地，这一行代码将模型的classifier属性替换为一个nn.Identity()实例。在卷积神经网络中，通常最后的分类器层负责将经过全局池化后的特征进行分类。
+        # 将classifier替换为nn.Identity()相当于去掉分类器层，保留模型的特征提取部分而不执行最终的分类操作。
         basemodel.classifier = nn.Identity()
 
         # Building Encoder-Decoder model
@@ -142,4 +170,5 @@ if __name__ == '__main__':
     model = UnetAdaptiveBins.build(100)
     x = torch.rand(2, 3, 480, 640)
     bins, pred = model(x)
+    # make_dot(pred, params=dict(list(model.named_parameters()))).render("model_graph", format="png")
     print(bins.shape, pred.shape)

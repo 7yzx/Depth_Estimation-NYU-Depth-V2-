@@ -1,5 +1,5 @@
-import sys
-sys.path.append('/home/yzx/MM_tracking/Depth/REVISITING_MonoDepth')
+import sys,os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),os.path.pardir)))
 import argparse
 import os
 
