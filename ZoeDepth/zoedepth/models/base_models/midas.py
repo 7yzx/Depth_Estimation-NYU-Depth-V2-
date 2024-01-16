@@ -331,6 +331,11 @@ class MidasCore(nn.Module):
 
     @staticmethod
     def build(midas_model_type="DPT_BEiT_L_384", train_midas=False, use_pretrained_midas=True, fetch_features=False, freeze_bn=True, force_keep_ar=False, force_reload=False, **kwargs):
+        '''
+        midas_model_type、MiDaS 模型的类型
+        train_midas、是否对 MiDaS 进行训练
+        use_pretrained_midas，是否使用预训练的 MiDaS 模型
+        '''
         if midas_model_type not in MIDAS_SETTINGS:
             raise ValueError(
                 f"Invalid model type: {midas_model_type}. Must be one of {list(MIDAS_SETTINGS.keys())}")
@@ -338,9 +343,14 @@ class MidasCore(nn.Module):
             kwargs = MidasCore.parse_img_size(kwargs)
         img_size = kwargs.pop("img_size", [384, 384])
         print("img_size", img_size)
-        midas = torch.hub.load("intel-isl/MiDaS", midas_model_type,
-                               pretrained=use_pretrained_midas, force_reload=force_reload)
+
+        # midas = torch.hub.load("intel-isl/MiDaS", midas_model_type,
+        #                        pretrained=use_pretrained_midas, force_reload=force_reload)
+        repo_or_dir = "/home/whuai/.cache/torch/hub/intel-isl_MiDaS_master"
+        midas =torch.hub.load(repo_or_dir,midas_model_type,pretrained=use_pretrained_midas,source='local')
         kwargs.update({'keep_aspect_ratio': force_keep_ar})
+        # 使用加载的 MiDaS 模型创建 MidasCore 实例，传递了一些额外的参数，
+        # 如是否可训练、是否获取特征、是否冻结 Batch Normalization 等。
         midas_core = MidasCore(midas, trainable=train_midas, fetch_features=fetch_features,
                                freeze_bn=freeze_bn, img_size=img_size, **kwargs)
         midas_core.set_output_channels(midas_model_type)
