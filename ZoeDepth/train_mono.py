@@ -111,7 +111,7 @@ if __name__ == '__main__':
     mp.set_start_method('forkserver')
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-m", "--model", type=str, default="synunet")
+    parser.add_argument("-m", "--model", type=str, default="zoedepth")
     parser.add_argument("-d", "--dataset", type=str, default='nyu')
     parser.add_argument("--trainer", type=str, default=None)
 
