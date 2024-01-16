@@ -92,9 +92,9 @@ def evaluate(model, test_loader, config, round_vals=True, round_precision=3):
             d = colorize(depth.squeeze().cpu().numpy(), 0, 10)
             p = colorize(pred.squeeze().cpu().numpy(), 0, 10)
             im = transforms.ToPILImage()(image.squeeze().cpu())
-            im.save(os.path.join(config.save_images, f"{i}_img.png"))
-            Image.fromarray(d).save(os.path.join(config.save_images, f"{i}_depth.png"))
-            Image.fromarray(p).save(os.path.join(config.save_images, f"{i}_pred.png"))
+            # im.save(os.path.join(config.save_images, f"{i}_img.png"))
+            # Image.fromarray(d).save(os.path.join(config.save_images, f"{i}_depth.png"))
+            Image.fromarray(p).save(os.path.join(config.save_images,f"{i}_pred.png"))
 
 
 
@@ -137,7 +137,7 @@ if __name__ == '__main__':
     parser.add_argument("-m", "--model", type=str,
                         required=True, help="Name of the model to evaluate")
     parser.add_argument("-p", "--pretrained_resource", type=str,
-                        required=False, default=None, help="Pretrained resource to use for fetching weights. If not set, default resource from model config is used,  Refer models.model_io.load_state_from_resource for more details.")
+                        required=False, default='local::/home/whuai/Depth_Estimation-NYU-Depth-V2-/ZoeDepth/local_pt/ZoeD_M12_N.pt', help="Pretrained resource to use for fetching weights. If not set, default resource from model config is used,  Refer models.model_io.load_state_from_resource for more details.")
     parser.add_argument("-d", "--dataset", type=str, required=False,
                         default='nyu', help="Dataset to evaluate on")
 
