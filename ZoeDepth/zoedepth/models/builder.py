@@ -26,7 +26,8 @@ from importlib import import_module
 from zoedepth.models.depth_model import DepthModel
 
 def build_model(config) -> DepthModel:
-    """Builds a model from a config. The model is specified by the model name and version in the config. The model is then constructed using the build_from_config function of the model interface.
+    """Builds a model from a config. The model is specified by the model name and version in the config.
+    The model is then constructed using the build_from_config function of the model interface.
     This function should be used to construct models for training and evaluation.
 
     Args:
@@ -35,7 +36,7 @@ def build_model(config) -> DepthModel:
     Returns:
         torch.nn.Module: Model corresponding to name and version as specified in config
     """
-    module_name = f"zoedepth.models.{config.model}"
+    module_name = f"zoedepth.models.{config.model}" #'zoedepth.models.zoedepth'
     try:
         module = import_module(module_name)
     except ModuleNotFoundError as e:
@@ -48,4 +49,6 @@ def build_model(config) -> DepthModel:
     except AttributeError as e:
         raise ValueError(
             f"Model {config.model} has no get_version function.") from e
+    # get_version(config.version_name):-> <class 'zoedepth.models.zoedepth.zoedepth_v1.ZoeDepth'>
+    # build_from_config(config):zoedepth/models/zoedepth/zoedepth_v1
     return get_version(config.version_name).build_from_config(config)
