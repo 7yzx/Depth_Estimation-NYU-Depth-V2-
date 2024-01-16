@@ -31,7 +31,8 @@
         "w_si": 1,
         "w_domain": 0.2,
         "w_reg": 0,
-        "w_grad": 0,
+        "w_normal": 0.5,
+        "w_grad": 0.5,
         "avoid_boundary": false,
         "random_crop": false,
         "input_width": 640,
@@ -53,6 +54,6 @@
     "eval":{
         "train_midas": false,
         "use_pretrained_midas": false,
-        "pretrained_resource" : "url::https://github.com/isl-org/ZoeDepth/releases/download/v1.0/ZoeD_M12_N.pt"
+        "pretrained_resource" : "local::/home/whuai/Depth_Estimation-NYU-Depth-V2-/ZoeDepth/local_pt/ZoeD_M12_N.pt"
     }
 }
