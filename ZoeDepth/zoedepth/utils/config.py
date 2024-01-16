@@ -35,15 +35,17 @@ ROOT = pathlib.Path(__file__).parent.parent.resolve()
 
 HOME_DIR = os.path.expanduser("~")
 
+My_project_PATH = "Depth_Estimation-NYU-Depth-V2-/ZoeDepth"
 COMMON_CONFIG = {
-    "save_dir": os.path.expanduser("~/shortcuts/monodepth3_checkpoints"),
+    "save_dir": os.path.expanduser("~/Depth_Estimation-NYU-Depth-V2-/ZoeDepth/shortcuts/monodepth3_checkpoints"),
     "project": "ZoeDepth",
     "tags": '',
     "notes": "",
     "gpu": None,
     "root": ".",
     "uid": None,
-    "print_losses": False
+    "print_losses": False,
+    "save_images": "./results3"
 }
 
 DATASETS_CONFIG = {
@@ -98,13 +100,13 @@ DATASETS_CONFIG = {
         "avoid_boundary": False,
         "min_depth": 1e-3,   # originally 0.1
         "max_depth": 10,
-        "data_path": os.path.join(HOME_DIR, "shortcuts/datasets/nyu_depth_v2/sync/"),
-        "gt_path": os.path.join(HOME_DIR, "shortcuts/datasets/nyu_depth_v2/sync/"),
+        "data_path": os.path.join(HOME_DIR, My_project_PATH,"datasets/nyu_depth_v2/sync/"),
+        "gt_path": os.path.join(HOME_DIR, My_project_PATH,"datasets/nyu_depth_v2/sync/"),
         "filenames_file": "./train_test_inputs/nyudepthv2_train_files_with_gt.txt",
         "input_height": 480,
         "input_width": 640,
-        "data_path_eval": os.path.join(HOME_DIR, "shortcuts/datasets/nyu_depth_v2/official_splits/test/"),
-        "gt_path_eval": os.path.join(HOME_DIR, "shortcuts/datasets/nyu_depth_v2/official_splits/test/"),
+        "data_path_eval": os.path.join(HOME_DIR, My_project_PATH, "datasets/nyu_depth_v2/official_splits/test/"),
+        "gt_path_eval": os.path.join(HOME_DIR, My_project_PATH, "datasets/nyu_depth_v2/official_splits/test/"),
         "filenames_file_eval": "./train_test_inputs/nyudepthv2_test_files_with_gt.txt",
         "min_depth_eval": 1e-3,
         "max_depth_eval": 10,
@@ -255,6 +257,45 @@ COMMON_TRAINING_CONFIG = {
 
 
 def flatten(config, except_keys=('bin_conf')):
+    """
+    作用：将嵌套的字典展平成一维字典，同时排除了指定的键。
+    展平的过程中，字典中的每一对键值对都被保留，而排除的键则保持嵌套结构。
+    举例：
+    # 嵌套的配置字典
+        nested_config = {
+            'model': {
+                'type': 'resnet',
+                'num_layers': 18,
+                'architecture': {
+                    'conv1': {'kernel_size': 3, 'stride': 1, 'padding': 1},
+                    'layer1': {'num_blocks': 2, 'block_type': 'basic'},
+                    'layer2': {'num_blocks': 2, 'block_type': 'basic'}
+                }
+            },
+            'optimizer': 'adam',
+            'learning_rate': 0.001,
+            'bin_conf': {'threshold': 0.5, 'use_binary': True}
+        }
+
+        # 使用 flatten 函数展平配置字典，同时排除 'bin_conf' 键
+        flattened_config = flatten(nested_config)
+
+        # 打印展平后的结果
+        print(flattened_config)
+        {
+        'type': 'resnet',
+        'num_layers': 18,
+        'kernel_size': 3,
+        'stride': 1,
+        'padding': 1,
+        'num_blocks': 2,
+        'block_type': 'basic',
+        'optimizer': 'adam',
+        'learning_rate': 0.001
+        }
+
+
+    """
     def recurse(inp):
         if isinstance(inp, dict):
             for key, value in inp.items():
