@@ -106,6 +106,83 @@ def grad(x):
 def grad_mask(mask):
     return mask[..., 1:, 1:] & mask[..., 1:, :-1] & mask[..., :-1, 1:]
 
+class GradLoss(nn.Module):
+    def __init__(self):
+        super(GradLoss,self).__init__()
+        self.name = 'GradLoss'
+    def forward(self, input, target, mask=None, interpolate=True, return_interpolated=False):
+        # extract_key 函数，从 input 中提取特定的键，这个键是由 KEY_OUTPUT 定义的。
+        input = extract_key(input, KEY_OUTPUT)
+        #
+        if input.shape[-1] != target.shape[-1] and interpolate:
+            input = nn.functional.interpolate(
+                input, target.shape[-2:], mode='bilinear', align_corners=True)
+            intr_input = input
+        else:
+            intr_input = input
+        # 如果 input 的最后一个维度的大小与 target 的最后一个维度的大小不匹配，并且 interpolate 为 True，
+        # 则使用双线性插值将 input 的大小调整为与 target 相匹配。插值后的结果存储在 intr_input 中。
+        grad_gt = grad(target)
+        grad_pred = grad(input)
+        mask_g = grad_mask(mask)
+
+
+        with amp.autocast(enabled=False):  # amp causes NaNs in this loss function
+            alpha = 1e-7
+            e_x = torch.abs(grad_pred[0][mask_g] - grad_gt[0][mask_g])
+            e_y = torch.abs(grad_pred[1][mask_g] - grad_gt[1][mask_g])
+
+            loss_grad = torch.mean(torch.log(e_x + e_y) + 0.5)
+
+        if torch.isnan(loss_grad):
+            print("Nan SILog loss")
+            print("input:", input.shape)
+            print("target:", target.shape)
+            print("Input min max", torch.min(input), torch.max(input))
+            print("Target min max", torch.min(target), torch.max(target))
+            print("loss", torch.isnan(loss_grad))
+
+        if not return_interpolated:
+            return loss_grad
+
+        return loss_grad, intr_input
+class NormalLoss(nn.Module):
+    def __init__(self):
+        super(NormalLoss,self).__init__()
+        self.name = 'NormalLoss'
+    def forward(self, input, target, mask=None, interpolate=True, return_interpolated=False):
+        """
+        input（模型的输出）
+        target（实际值）、
+        mask（可选的掩码 用于指定感兴趣的区域）、
+        interpolate 一个插值标志
+        return_interpolated一个返回插值输入标志
+        """
+        # extract_key 函数，从 input 中提取特定的键，这个键是由 KEY_OUTPUT 定义的。
+        input = extract_key(input, KEY_OUTPUT)
+        #
+        if input.shape[-1] != target.shape[-1] and interpolate:
+            input = nn.functional.interpolate(
+                input, target.shape[-2:], mode='bilinear', align_corners=True)
+            intr_input = input
+        else:
+            intr_input = input
+        # 如果 input 的最后一个维度的大小与 target 的最后一个维度的大小不匹配，并且 interpolate 为 True，
+        # 则使用双线性插值将 input 的大小调整为与 target 相匹配。插值后的结果存储在 intr_input 中。
+        grad_gt = grad(target)
+        grad_pred = grad(input)
+        mask_g = grad_mask(mask)
+
+        # loss: normal
+        ones = torch.ones(target.size(0), 1, target.size(2), target.size(3), requires_grad=True)
+        gt_normal = torch.cat((-grad_gt[0], -grad_gt[1], ones), 1)
+        pred_normal = torch.cat((-grad_pred[0], -grad_pred[1], ones), 1)
+
+        loss_normal = torch.mean(torch.abs(1 - torch.cos(pred_normal, gt_normal)))
+
+        if not return_interpolated:
+            return loss_normal
+        return loss_normal, intr_input
 
 class GradL1Loss(nn.Module):
     """Gradient loss"""
@@ -114,21 +191,37 @@ class GradL1Loss(nn.Module):
         self.name = 'GradL1'
 
     def forward(self, input, target, mask=None, interpolate=True, return_interpolated=False):
+        """
+        input（模型的输出）
+        target（实际值）、
+        mask（可选的掩码 用于指定感兴趣的区域）、
+        interpolate 一个插值标志
+        return_interpolated一个返回插值输入标志
+        """
+        # extract_key 函数，从 input 中提取特定的键，这个键是由 KEY_OUTPUT 定义的。
         input = extract_key(input, KEY_OUTPUT)
+        #
         if input.shape[-1] != target.shape[-1] and interpolate:
             input = nn.functional.interpolate(
                 input, target.shape[-2:], mode='bilinear', align_corners=True)
             intr_input = input
         else:
             intr_input = input
-
+        # 如果 input 的最后一个维度的大小与 target 的最后一个维度的大小不匹配，并且 interpolate 为 True，
+        # 则使用双线性插值将 input 的大小调整为与 target 相匹配。插值后的结果存储在 intr_input 中。
         grad_gt = grad(target)
         grad_pred = grad(input)
         mask_g = grad_mask(mask)
 
         loss = nn.functional.l1_loss(grad_pred[0][mask_g], grad_gt[0][mask_g])
+        #修改
+        loss = torch.log(loss+ 0.5)
         loss = loss + \
-            nn.functional.l1_loss(grad_pred[1][mask_g], grad_gt[1][mask_g])
+            torch.log(nn.functional.l1_loss(grad_pred[1][mask_g], grad_gt[1][mask_g]) + 0.5 )
+        # loss = nn.functional.l1_loss(grad_pred[0][mask_g], grad_gt[0][mask_g])
+        # loss = loss + \
+        #     nn.functional.l1_loss(grad_pred[1][mask_g], grad_gt[1][mask_g])
+
         if not return_interpolated:
             return loss
         return loss, intr_input
