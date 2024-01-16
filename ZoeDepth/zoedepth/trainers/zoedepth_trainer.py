@@ -27,6 +27,7 @@ import torch.cuda.amp as amp
 import torch.nn as nn
 
 from zoedepth.trainers.loss import GradL1Loss, SILogLoss
+from zoedepth.trainers.loss import GradLoss,NormalLoss
 from zoedepth.utils.config import DATASETS_CONFIG
 from zoedepth.utils.misc import compute_metrics
 from zoedepth.data.preprocess import get_black_border
@@ -43,6 +44,8 @@ class Trainer(BaseTrainer):
         self.device = device
         self.silog_loss = SILogLoss()
         self.grad_loss = GradL1Loss()
+        self.new_grad_loss = GradLoss()
+        self.normal_loss = NormalLoss()
         self.scaler = amp.GradScaler(enabled=self.config.use_amp)
 
     def train_on_batch(self, batch, train_step):
@@ -55,12 +58,13 @@ class Trainer(BaseTrainer):
         images, depths_gt = batch['image'].to(
             self.device), batch['depth'].to(self.device)
         dataset = batch['dataset'][0]
-
+        #16 3 480 640
         b, c, h, w = images.size()
         mask = batch["mask"].to(self.device).to(torch.bool)
 
         losses = {}
-
+        #  PyTorch 的 Automatic Mixed Precision（AMP）功能。
+        #  AMP是一种用于深度学习模型训练的技术，旨在提高训练速度并减少内存占用。
         with amp.autocast(enabled=self.config.use_amp):
 
             output = self.model(images)
@@ -70,13 +74,23 @@ class Trainer(BaseTrainer):
                 pred_depths, depths_gt, mask=mask, interpolate=True, return_interpolated=True)
             loss = self.config.w_si * l_si
             losses[self.silog_loss.name] = l_si
-
+            # 要去改数值参考 是1 ，但是我这里写0.5
             if self.config.w_grad > 0:
-                l_grad = self.grad_loss(pred, depths_gt, mask=mask)
+                l_grad = self.new_grad_loss(pred,depths_gt,mask=mask)
+                # l_grad = self.grad_loss(pred, depths_gt, mask=mask)
                 loss = loss + self.config.w_grad * l_grad
+
                 losses[self.grad_loss.name] = l_grad
             else:
                 l_grad = torch.Tensor([0])
+
+            if self.config.w_normal > 0:
+                n_grad = self.normal_loss(pred,depths_gt,mask=mask)
+                loss = loss + self.config.w_normal * n_grad
+
+                losses[self.normal_loss.name] = n_grad
+            else:
+                n_grad = torch.Tensor([0])
 
         self.scaler.scale(loss).backward()
 
