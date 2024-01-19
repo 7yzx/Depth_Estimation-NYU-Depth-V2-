@@ -47,7 +47,7 @@
     "infer":{
         "train_midas": false,
         "use_pretrained_midas": false,
-        "pretrained_resource" : "url::https://github.com/isl-org/ZoeDepth/releases/download/v1.0/ZoeD_M12_N.pt",
+        "pretrained_resource" : "local::/home/whuai/Depth_Estimation-NYU-Depth-V2-/ZoeDepth/local_pt/ZoeD_M12_N.pt",
         "force_keep_ar": true
     },
 
